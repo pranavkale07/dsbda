@@ -1,0 +1,101 @@
+hbase shell
+
+1.  hbase(main):001:0> create 'flight','finfo','fsch'
+
+// list tables
+2.  hbase(main):001:0> list 
+
+// put the records in it
+3.  hbase(main):003:0> put 'flight',2,'finfo:source','nashik'
+
+    hbase(main):004:0> put 'flight',2,'finfo:dest','satana'
+
+    hbase(main):003:0> put 'flight',2,'finfo:year','2025'
+
+    hbase(main):004:0> put 'flight',2,'fsch:at','2:00 PM'
+
+    hbase(main):005:0> put 'flight',2,'fsch:dt','3:00 PM'
+
+    hbase(main):006:0> put 'flight',2,'fsch:delay_in_mins', 60
+
+// then see the contents
+4. hbase(main):007:0> scan 'flight'
+    ROW                                COLUMN+CELL                                                                                         
+    1                                 column=finfo:dest, timestamp=1715163854340, value=pune                                              
+    1                                 column=finfo:source, timestamp=1715163838127, value=mumbai                                          
+    1                                 column=finfo:year, timestamp=1715163869808, value=2024                                              
+    1                                 column=fsch:at, timestamp=1715163886590, value=10:10 AM                                             
+    1                                 column=fsch:delay_in_mins, timestamp=1715163912771, value=30                                        
+    1                                 column=fsch:dt, timestamp=1715163895751, value=10:30 AM                                             
+    2                                 column=finfo:dest, timestamp=1715165336868, value=satana                                            
+    2                                 column=finfo:source, timestamp=1715165325681, value=nashik                                          
+    2                                 column=finfo:year, timestamp=1715165439681, value=2025                                              
+    2                                 column=fsch:at, timestamp=1715165462161, value=2:00 PM                                              
+    2                                 column=fsch:delay_in_mins, timestamp=1715165482546, value=60                                        
+    2                                 column=fsch:dt, timestamp=1715165471253, value=3:00 PM                                              
+
+
+// alter the contents
+5.  hbase(main):008:0> delete 'flight','1','fsch:delay_in_mins',1715163912771
+
+    hbase(main):009:0> scan 'flight'
+    ROW                                COLUMN+CELL                                                                                         
+    1                                 column=finfo:dest, timestamp=1715163854340, value=pune                                              
+    1                                 column=finfo:source, timestamp=1715163838127, value=mumbai                                          
+    1                                 column=finfo:year, timestamp=1715163869808, value=2024                                              
+    1                                 column=fsch:at, timestamp=1715163886590, value=10:10 AM                                             
+    1                                 column=fsch:dt, timestamp=1715163895751, value=10:30 AM                                             
+    2                                 column=finfo:dest, timestamp=1715165336868, value=satana                                            
+    2                                 column=finfo:source, timestamp=1715165325681, value=nashik                                          
+    2                                 column=finfo:year, timestamp=1715165439681, value=2025                                              
+    2                                 column=fsch:at, timestamp=1715165462161, value=2:00 PM                                              
+    2                                 column=fsch:delay_in_mins, timestamp=1715165482546, value=60                                        
+    2                                 column=fsch:dt, timestamp=1715165471253, value=3:00 PM                                              
+
+    hbase(main):010:0> put 'flight',1,'fsch:delay_in_mins', 30
+
+    hbase(main):011:0> scan 'flight'
+    ROW                                COLUMN+CELL                                                                                         
+    1                                 column=finfo:dest, timestamp=1715163854340, value=pune                                              
+    1                                 column=finfo:source, timestamp=1715163838127, value=mumbai                                          
+    1                                 column=finfo:year, timestamp=1715163869808, value=2024                                              
+    1                                 column=fsch:at, timestamp=1715163886590, value=10:10 AM                                             
+    1                                 column=fsch:delay_in_mins, timestamp=1715165692904, value=30                                        
+    1                                 column=fsch:dt, timestamp=1715163895751, value=10:30 AM                                             
+    2                                 column=finfo:dest, timestamp=1715165336868, value=satana                                            
+    2                                 column=finfo:source, timestamp=1715165325681, value=nashik                                          
+    2                                 column=finfo:year, timestamp=1715165439681, value=2025                                              
+    2                                 column=fsch:at, timestamp=1715165462161, value=2:00 PM                                              
+    2                                 column=fsch:delay_in_mins, timestamp=1715165482546, value=60                                        
+    2                                 column=fsch:dt, timestamp=1715165471253, value=3:00 PM                                              
+    2 row(s) in 0.0520 seconds
+
+
+// add new field revenue (altering the table)
+6. hbase(main):012:0> alter 'flight',NAME=>'revenue'
+
+    hbase(main):013:0> put 'flight',1,'revenue:in Rs','45000'
+
+    hbase(main):014:0> put 'flight',2,'revenue:in Rs','50000'
+
+
+
+hive
+
+hive> create external table hbase_flight_new(fno int,fsource string, fdest string, fsh_at string,fsh_dt string, delay int)
+    > stored by 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+    > with serdeproperties("hbase.columns.mapping"=":key,finfo:source,finfo:dest,fsch:at,fsch:dt,fsch:delay_in_mins")
+    > TBLPROPERTIES("hbase.table.name"="flight");
+
+hive> select *from hbase_flight_new;
+
+// Find the total departure delay in Hive
+hive> select sum(delay) from hbase_flight_new;
+hive> select avg(delay) from hbase_flight_new;
+
+hive> create index hbase_index
+    > on table hbase_flight_new (delay)
+    > as 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
+    > with deferred rebuild;
+OK
+

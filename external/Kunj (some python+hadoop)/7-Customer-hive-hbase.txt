@@ -1,0 +1,93 @@
+$ hive
+hive> CREATE TABLE Customer_info (
+      Cust_ID INT,
+      Cust_Name STRING,
+      OrderID INT)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+1,John Doe,101
+2,Jane Smith,102
+3,Michael Johnson,103
+4,Emily Brown,104
+5,Christopher Lee,105
+
+
+
+hive> CREATE TABLE order_info (
+      OrderID INT,
+      ItemID INT,
+      Quantity INT)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+1,Shirt,2099
+2,Pants,2999
+3,Shoes,3999
+4,Hat,999
+5,Socks,499
+
+
+
+
+hive> CREATE TABLE item_info (
+      Item_ID INT,
+      Item_Name STRING,
+      ItemPrice DOUBLE)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+101,1,2
+102,2,3
+103,3,1
+104,1,5
+105,2,2
+
+
+
+hive> LOAD DATA LOCAL INPATH '/path/to/customer_info.csv' INTO TABLE Customer_info;
+hive> LOAD DATA LOCAL INPATH '/path/to/order_info.csv' INTO TABLE order_info;
+hive> LOAD DATA LOCAL INPATH '/path/to/item_info.csv' INTO TABLE item_info;
+
+
+$ hive
+hive> SELECT * FROM Customer_info
+      JOIN order_info ON Customer_info.OrderID = order_info.OrderID
+      JOIN item_info ON order_info.ItemID = item_info.Item_ID;
+
+
+hive> create index cust_index on table customer_info(Cust_Name) as 'compact' with deferred rebuild;
+OK
+
+
+hive> select sum(Item_price * Quantity) as total_sales, avg(Item_price * Quantity) as avg_sales
+    > from order_info
+    > join item_info on order_info.ItemID = item_info.ItemID;
+
+
+hive> select max(total_cost) from
+    > (select sum(Item_price * Quantity) as total_cost from order_info join item_info on order_info.ItemID = item_info.ItemID
+    > group by order_info.OrderID) subquery;
+
+
+
+create 'CustomerInfo','Customer'
+
+
+
+hive> create external table customerinfohbase(
+    > Cust_ID int, Cust_Name string, OrderID int)
+    > stored by 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+    > with serdeproperties("hbase.columns.mapping" = ":key,Customer:cust_name,Customer:order_id")
+    > tblproperties("hbase.table.name" = "CustomerInfo");
+
+
+hive> INSERT INTO TABLE customerinfohbase
+    > SELECT * FROM customer_info;
+
+
+hbase(main):001:0> list
+hbase(main):002:0> scan 'CustomerInfo'

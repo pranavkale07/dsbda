@@ -1,0 +1,80 @@
+hive
+
+
+hive> create table OnlineRetail(
+    > InvoiceNo string,
+    > StockCode string,
+    > Description string,
+    > Quantity int
+    > , UnitPrice double,
+    > CustomerID int,
+    > Country string)
+    > row format delimited
+    > fields terminated by ','
+    > stored as textfile;
+
+
+hive> load data local inpath '/home/cloudera/onlineRetail.csv' into table OnlineRetail;
+
+hive> select * from OnlineRetail;
+
+hive> create index olindex on table OnlineRetail(InvoiceNo) as 'compact' with deferred rebuild;
+
+hive> show index on OnlineRetail;
+
+hive> select sum(Quantity * UnitPrice) as total, avg(Quantity*UnitPrice) as average from Onlineretail;
+
+hive> select * from
+    > (select InvoiceNo, sum(Quantity*UnitPrice) as totalcost from OnlineRetail group by InvoiceNo)
+    > as ordercost
+    > order by totalcost desc
+    > limit 1;
+
+
+m. Find Customer details with maximum order total.
+hive> select CustomerID, sum(Quantity*UnitPrice) as totalcost
+    > from OnlineRetail
+    > group by CustomerID
+    > order by totalcost desc
+    > limit 1;
+
+maximum:
+hive> select country, sum(Quantity * UnitPrice) as totalsale
+    > from OnlineRetail
+    > group by Country
+    > order by totalsale desc
+    > limit 1;
+
+
+minimum:
+hive> select country, sum(Quantity * UnitPrice) as totalsale
+    > from OnlineRetail
+    > group by Country
+    > order by totalsale asc
+    > limit 1;
+
+
+Creating an external Hive table to connect to the HBase for OnlineRetail.
+hive> create external table OnlineRetailHbase(
+    > InvoiceNo string,
+    > StockCode string,
+    > Description string,
+    > Quantity int,
+    > UnitPrice double,
+    > CustomerID int,
+    > Country string)
+    > stored by 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+    > with serdeproperties(
+    > "hbase.columns.mapping" = "
+    > :key,OnlineRetail:stock_code,OnlineRetail:description,OnlineRetail:quantity,OnlineRetail:unitprice,OnlineRetail:custID,OnlineRetail:country")
+    > tblproperties("hbase.table.name"="OnlineRetailRecords");
+OK
+
+
+hive> insert into OnlineRetailHbase 
+    > select * from OnlineRetail;
+
+
+p. Display records of OnlineRetail Table in Hbase.
+hbase(main):001:0> create 'OnlineRetailRecords','OnlineRetail'
+0 row(s) in 3.0470 seconds

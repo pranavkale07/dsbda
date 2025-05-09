@@ -1,4 +1,6 @@
 https://chatgpt.com/share/681d79bc-ef0c-8009-86b6-b4a67963d139
+swikar: https://chatgpt.com/share/681d71a1-dfa0-8004-9a8a-2ae6d0a87ced
+python sw: https://colab.research.google.com/drive/1KkwhNGOM5zwJCMKI5XHvVzcx494upVof#scrollTo=mH9TndAS5zhc
 
 give all cmds step by step for cloudera Write an application using HBase and HiveQL for flight information system which will  
 include 
